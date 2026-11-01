@@ -1,57 +1,35 @@
+## Project Context
 
-You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
+This is the front-end of a personal tool that randomizes Dead by Daylight builds (character, 4 perks, add-ons) from the player's inventory and explains why the combination works. The back-end is a separate .NET API (Controllers, EF Core). Requirements are in the FRD (modules CAT, INV, SOR, EXP, HIS).
 
-## TypeScript Best Practices
+## Stack and Decisions
 
-- Use strict type checking
-- Prefer type inference when the type is obvious
-- Avoid the `any` type; use `unknown` when type is uncertain
+- Angular 22, Angular Material, SCSS for styling. No SSR/SSG.
+- Do NOT add Tailwind or other UI libraries unless asked.
+- Zod validates data at the boundaries (API responses). Form validation stays with Signal Forms.
+- Ask before adding any new dependency.
 
-## Angular Best Practices
+## Architecture
 
-- Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
-- Do NOT set `changeDetection: ChangeDetectionStrategy.OnPush` explicitly. `OnPush` is the default in Angular v22+.
-- Use signals for state management
-- Implement lazy loading for feature routes
-- Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
-- Use `NgOptimizedImage` for all static images.
-  - `NgOptimizedImage` does not work for inline base64 images.
+- Organize by feature: `src/app/features/{catalog,inventory,draw,history}`; shared code in `src/app/shared`; API clients and interceptors in `src/app/core`.
+- Business rules (draw, inventory filtering, explanation) live in the API. The front only sends filters and renders results.
+- One service per API resource, using `HttpClient` with `inject()`. The API base URL comes from the environment config, never hardcoded.
 
-## Accessibility Requirements
+## API (MVP)
 
-- It MUST pass all AXE checks.
-- It MUST follow all WCAG AA minimums, including focus management, color contrast, and ARIA attributes.
+- `GET /api/characters`, `/api/perks`, `/api/addons`, `/api/items`, `/api/tags`
+- `GET /api/inventory`, `PUT /api/inventory/characters/{id}`, `PUT /api/inventory/perks/{id}`, `PUT /api/inventory/bulk`
+- `POST /api/draws` (side, locks, exclusions, challenge tag) returns a build with its explanation
+- `POST /api/builds`, `GET /api/builds`, `PATCH /api/builds/{id}/recorded`
+- Errors come as `ProblemDetails`; show a friendly message in the UI.
 
-### Components
+## Domain Rules the UI Must Respect
 
-- Keep components small and focused on a single responsibility
-- Use `input()` and `output()` functions instead of decorators
-- Use `computed()` for derived state
-- Prefer inline templates for small components
-- Prefer Signal Forms (`@angular/forms/signals`) for new forms. They are stable in Angular v22+ and provide signal-based state, type-safe field access, and schema-based validation
-- When not using Signal Forms, prefer Reactive forms instead of Template-driven ones
-- Do NOT use `ngClass`, use `class` bindings instead
-- Do NOT use `ngStyle`, use `style` bindings instead
-- When using external templates/styles, use paths relative to the component TS file.
+- A build has 4 perks, all from the same side (killer or survivor).
+- If the API returns a partial build, show how many perks are missing.
+- Locked items stay in the build on re-roll; excluded items never appear.
 
-## State Management
+## Conventions
 
-- Use signals for local component state
-- Use `computed()` for derived state
-- Keep state transformations pure and predictable
-- Do NOT use `mutate` on signals, use `update` or `set` instead
-
-## Templates
-
-- Keep templates simple and avoid complex logic
-- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
-- Use the async pipe to handle observables
-- Do not assume globals like (`new Date()`) are available.
-
-## Services
-
-- Design services around a single responsibility
-- Use the `providedIn: 'root'` option for singleton services
-- Prefer the `@Service` decorator over `@Injectable({providedIn: 'root'})` for new singleton services (Angular v22+)
-- Use the `inject()` function instead of constructor injection
+- Code, identifiers, and comments in English. UI text in Portuguese (pt-BR).
+- The MVP has no authentication and no AI explanation (phase 2).
